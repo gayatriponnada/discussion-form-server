@@ -1,0 +1,16 @@
+version: "4.16.2"
+services:
+  postgres:
+    image: postgres:15
+    container_name: sample_postgres_dev
+    restart: always
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=sample
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+volumes:
+  postgres-volume:
