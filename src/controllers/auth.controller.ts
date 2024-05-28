@@ -1,8 +1,7 @@
 import prisma from "@server/db";
 import catchAsync from "@server/utils/api.util";
 import AppError from "@server/utils/error.util";
-import { compareSync, hashSync } from "bcrypt";
-import * as jwt from "jsonwebtoken";
+import Auth from "@server/utils/auth.util";
 
 export const signUp = catchAsync(async function (req, res, next) {
 	const { name, email, password, confirmPassword } = req.body;
@@ -21,7 +20,7 @@ export const signUp = catchAsync(async function (req, res, next) {
 		data: {
 			name,
 			email,
-			password: hashSync(password, 5)
+			password: await Auth.hashPassword(password)
 		}
 	});
 	res.status(201).json({
@@ -41,13 +40,21 @@ export const login = catchAsync(async function (req, res, next) {
 	if (!user) {
 		throw new AppError("User does not exist", 400);
 	}
-	if (!compareSync(password, user.password)) {
+	if (!(await Auth.validPassword(password, user.password))) {
 		throw new AppError("Incorrect password", 400);
 	}
-
-	res.status(201).json({
+	const token = await Auth.signToken({
+		id: user.id,
+		email: user.email,
+		name: user.name,
+		role: user.role
+	});
+	res.status(200).json({
 		status: 'success',
 		message: "Logged in successfully",
+		data: {
+			token, user
+		}
 	});
 });
 
@@ -62,10 +69,10 @@ export const resetPassword = catchAsync(async function (req, res, next) {
 		}
 	});
 
-	if (!user || !compareSync(password, user.password)) {
+	if (!user || !(await Auth.validPassword(password, user.password))) {
 		throw new AppError("Password is not matching or user does not exists", 400);
 	}
-	const hashedPassword = hashSync(newPassword, 12);
+	const hashedPassword = await Auth.hashPassword(newPassword);
 
 	await prisma.user.update({
 		where: {
