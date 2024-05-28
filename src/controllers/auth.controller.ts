@@ -75,7 +75,7 @@ export const resetPassword = catchAsync(async function (req, res, next) {
 			password: hashedPassword
 		}
 	});
-	res.status(200).json({
+	res.status(201).json({
 		status: 'success',
 		message: 'Password has been reset successfully'
 	});
